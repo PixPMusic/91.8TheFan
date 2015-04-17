@@ -6,6 +6,7 @@ import android.content.Intent;
 import android.content.SharedPreferences;
 import android.graphics.drawable.Drawable;
 import android.graphics.drawable.LayerDrawable;
+import android.os.Build;
 import android.os.Bundle;
 import android.os.Handler;
 import android.preference.PreferenceManager;
@@ -53,6 +54,7 @@ public class MainActivity extends Activity {
         PlayIco = l.findDrawableByLayerId(R.id.plico);
         PauseIco = l.findDrawableByLayerId(R.id.paico);
 
+
         stationName.setText(station);
         streamName.setText("Title");
         streamURL.setText("Artist");
@@ -65,36 +67,56 @@ public class MainActivity extends Activity {
         editor.commit();
         streamService = new Intent(MainActivity.this, BackgroundService.class);
 
+        if (isPlaying){
+            startAudio(); //currently the service sets the isPlaying pref to false when it is destroyed.
+                          //this check will cause the audio to start on load if the pref is true when loaded (if you want that functionality).
+        }else{
+            doShowPlayIco(true);
+        }
+
         PlayPause.setOnClickListener(new View.OnClickListener(){
             @Override
             public void onClick(View view) {
                 if (!isPlaying) {
-                    mHandler = new Handler();
-                    startRepeatingTask();
-                    startService(streamService);
+                    startAudio();
                 } else {
-                    stopRepeatingTask();
-                    stopService(streamService);
+                    stopAudio();
                 }
                 isPlaying = !isPlaying;
             }
         });
     }
 
+    private void startAudio(){
+        doShowPlayIco(true);
+        if (mHandler == null){ //fresh app start where isPlaying was false, so we init the Handler.
+            mHandler = new Handler();
+        }
+        startRepeatingTask();
+        startService(streamService);
+    }
+
+    private void stopAudio(){
+        doShowPlayIco(false);
+        removeRepeatingTaskCallbacks();
+        stopService(streamService);
+    }
+
+    private void doShowPlayIco(boolean showPlay){
+        PlayIco.setVisible(showPlay, true);
+        PauseIco.setVisible(!showPlay, true);
+        l.invalidateDrawable(PlayIco);
+        l.invalidateDrawable(PauseIco);
+        l.invalidateSelf();
+    }
+
     public void getPrefs() {
         isPlaying = prefs.getBoolean("isPlaying", false);
-        if (isPlaying) {
-            PlayIco.setAlpha(0);
-            PauseIco.setAlpha(255);
-        } else {
-            PlayIco.setAlpha(255);
-            PauseIco.setAlpha(0);
-        }
     }
 
     Runnable mStatusChecker = new Runnable() {
         @Override
-        public void run() {
+        public void run() { //consider moving this to logic to the service and using BroadcastReceiver to receive it on UI thread. (ie, via custom intent extras)
             Log.i("Artist", "Repeat");
             MainActivity.meta.update();
             String artist = metaFetch.getArtist();
@@ -111,19 +133,25 @@ public class MainActivity extends Activity {
     };
 
     void startRepeatingTask() {
+        //start
         mStatusChecker.run();
     }
 
-    void stopRepeatingTask() {
+    void removeRepeatingTaskCallbacks() {
         mHandler.removeCallbacks(mStatusChecker);
+    }
+
+    private void cleanUp(){
+        if (isPlaying) {
+            stopService(streamService);
+        }
+        removeRepeatingTaskCallbacks();
     }
 
     @Override
     public void onDestroy() {
-        stopRepeatingTask();
-        if (isPlaying) {
-            stopService(streamService);
-        }
+        super.onDestroy();
+        cleanUp();
     }
 }
 
