@@ -19,7 +19,7 @@ import java.io.IOException;
 public class BackgroundService extends Service {
     private static final String TAG = "StreamService";
     MediaPlayer mp;
-    boolean isPlaying;
+    private static boolean isPlaying;
     SharedPreferences prefs;
     SharedPreferences.Editor editor;
     Notification n;
@@ -74,8 +74,6 @@ public class BackgroundService extends Service {
 
         notificationManager.notify(notifId, n);
 
-
-
         // It's very important that you put the IP/URL of your ShoutCast stream here
         // Otherwise you'll get Webcom Radio
         mp = new MediaPlayer();
@@ -109,6 +107,8 @@ public class BackgroundService extends Service {
 
         mHandler = new Handler();
         startRepeatingTask();
+
+        isPlaying = true;
 
         Context context = getApplicationContext();
         String notifTitle = context.getResources().getString(R.string.app_name);
@@ -151,8 +151,6 @@ public class BackgroundService extends Service {
             // Change 5315 to some nother number
             notificationManager.notify(notifId, n);
 
-
-
             mHandler.postDelayed(mStatusChecker, mInterval);
         }
     };
@@ -165,10 +163,15 @@ public class BackgroundService extends Service {
         mHandler.removeCallbacks(mStatusChecker);
     }
 
+    public static boolean getIsPlaying() {
+        return isPlaying;
+    }
+
     @Override
     public void onDestroy() {
         Log.d(TAG, "onDestroy");
         stopRepeatingTask();
+        isPlaying = false;
         mp.stop();
         mp.release();
         mp = null;
