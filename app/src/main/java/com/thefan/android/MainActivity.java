@@ -6,11 +6,8 @@ import android.content.Intent;
 import android.content.SharedPreferences;
 import android.graphics.drawable.Drawable;
 import android.graphics.drawable.LayerDrawable;
-import android.os.Build;
 import android.os.Bundle;
 import android.os.Handler;
-import android.preference.PreferenceManager;
-import android.util.Log;
 import android.view.View;
 import android.widget.ImageView;
 import android.widget.TextView;
@@ -23,7 +20,6 @@ public class MainActivity extends Activity {
     Drawable PlayIco;
     Drawable PauseIco;
     static Context context;
-    boolean isPlaying = false;
     Intent streamService;
     SharedPreferences prefs;
     SharedPreferences.Editor editor;
@@ -59,15 +55,15 @@ public class MainActivity extends Activity {
         streamName.setText("Title");
         streamURL.setText("Artist");
 
-        prefs = PreferenceManager.getDefaultSharedPreferences(context);
-        getPrefs();
-        editor = prefs.edit();
-        editor.putString("URL", url);
-        editor.putString("STATION", station);
-        editor.commit();
+        //prefs = PreferenceManager.getDefaultSharedPreferences(context);
+        //getPrefs();
+        //editor = prefs.edit();
+        //editor.putString("URL", url);
+        //editor.putString("STATION", station);
+        //editor.commit();
         streamService = new Intent(MainActivity.this, BackgroundService.class);
 
-        if (isPlaying){
+        if (BackgroundService.getIsPlaying()){
             startAudio(); //currently the service sets the isPlaying pref to false when it is destroyed.
                           //this check will cause the audio to start on load if the pref is true when loaded (if you want that functionality).
         }else{
@@ -77,12 +73,11 @@ public class MainActivity extends Activity {
         PlayPause.setOnClickListener(new View.OnClickListener(){
             @Override
             public void onClick(View view) {
-                if (!isPlaying) {
+                if (!BackgroundService.getIsPlaying()) {
                     startAudio();
                 } else {
                     stopAudio();
                 }
-                isPlaying = !isPlaying;
             }
         });
     }
@@ -103,6 +98,13 @@ public class MainActivity extends Activity {
     }
 
     private void doShowPlayIco(boolean showPlay){
+        if (showPlay) {
+            PlayIco.mutate().setAlpha(255);
+            PauseIco.mutate().setAlpha(0);
+        } else {
+            PlayIco.mutate().setAlpha(0);
+            PauseIco.mutate().setAlpha(255);
+        }
         PlayIco.setVisible(showPlay, true);
         PauseIco.setVisible(!showPlay, true);
         l.invalidateDrawable(PlayIco);
@@ -110,14 +112,13 @@ public class MainActivity extends Activity {
         l.invalidateSelf();
     }
 
-    public void getPrefs() {
-        isPlaying = prefs.getBoolean("isPlaying", false);
-    }
+    //public void getPrefs() {
+    //    isPlaying = prefs.getBoolean("isPlaying", false);
+    //}
 
     Runnable mStatusChecker = new Runnable() {
         @Override
         public void run() { //consider moving this to logic to the service and using BroadcastReceiver to receive it on UI thread. (ie, via custom intent extras)
-            Log.i("Artist", "Repeat");
             MainActivity.meta.update();
             String artist = metaFetch.getArtist();
             String title = metaFetch.getTitle();
@@ -142,10 +143,29 @@ public class MainActivity extends Activity {
     }
 
     private void cleanUp(){
-        if (isPlaying) {
+        if (BackgroundService.getIsPlaying()) {
             stopService(streamService);
         }
         removeRepeatingTaskCallbacks();
+    }
+
+    @Override
+    public void onStop() {
+        super.onStop();
+        if (BackgroundService.getIsPlaying()) {
+            removeRepeatingTaskCallbacks();
+        }
+    }
+
+    @Override
+    public void onStart() {
+        super.onStart();
+        if (BackgroundService.getIsPlaying()) {
+            startRepeatingTask();
+        } else {
+
+        }
+        doShowPlayIco(BackgroundService.getIsPlaying());
     }
 
     @Override
