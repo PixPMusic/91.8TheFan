@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="utf-8"?>
+<layer-list xmlns:android="http://schemas.android.com/apk/res/android"
+    android:id="@+id/playpausebutton">
+<item android:drawable="@drawable/light_big_button"
+        android:gravity="center"
+        android:layout_height="45dp"
+        android:layout_width="45dp" />
+    <item android:drawable="@drawable/dark_play_big"
+            android:id="@+id/plico"/>
+    <item android:drawable="@drawable/dark_pause_big"
+            android:id="@+id/paico"/>
+</layer-list>

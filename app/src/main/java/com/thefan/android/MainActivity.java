@@ -4,20 +4,25 @@ import android.app.Activity;
 import android.content.Context;
 import android.content.Intent;
 import android.content.SharedPreferences;
+import android.graphics.drawable.Drawable;
+import android.graphics.drawable.LayerDrawable;
 import android.os.Bundle;
 import android.os.Handler;
 import android.preference.PreferenceManager;
 import android.util.Log;
 import android.view.View;
-import android.widget.Button;
+import android.widget.ImageView;
 import android.widget.TextView;
 
 
 public class MainActivity extends Activity {
 
-    Button PlayPause;
+    ImageView PlayPause;
+    LayerDrawable l;
+    Drawable PlayIco;
+    Drawable PauseIco;
     static Context context;
-    boolean isPlaying;
+    boolean isPlaying = false;
     Intent streamService;
     SharedPreferences prefs;
     SharedPreferences.Editor editor;
@@ -43,12 +48,14 @@ public class MainActivity extends Activity {
         Intent in = getIntent();
 
         // Displaying all values on the screen
-        PlayPause = (Button) findViewById(R.id.playpause);
+        PlayPause = (ImageView) findViewById(R.id.playpause);
+        l = (LayerDrawable) getResources().getDrawable(R.drawable.pbutton);
+        PlayIco = l.findDrawableByLayerId(R.id.plico);
+        PauseIco = l.findDrawableByLayerId(R.id.paico);
 
         stationName.setText(station);
         streamName.setText("Title");
         streamURL.setText("Artist");
-        PlayPause.setText("Play");
 
         prefs = PreferenceManager.getDefaultSharedPreferences(context);
         getPrefs();
@@ -61,17 +68,15 @@ public class MainActivity extends Activity {
         PlayPause.setOnClickListener(new View.OnClickListener(){
             @Override
             public void onClick(View view) {
-
-                if (PlayPause.getText().equals("Play")) {
+                if (!isPlaying) {
                     mHandler = new Handler();
                     startRepeatingTask();
                     startService(streamService);
-                    PlayPause.setText("Stop");
                 } else {
                     stopRepeatingTask();
                     stopService(streamService);
-                    PlayPause.setText("Play");
                 }
+                isPlaying = !isPlaying;
             }
         });
     }
@@ -79,9 +84,11 @@ public class MainActivity extends Activity {
     public void getPrefs() {
         isPlaying = prefs.getBoolean("isPlaying", false);
         if (isPlaying) {
-            PlayPause.setText("Stop");
+            PlayIco.setAlpha(0);
+            PauseIco.setAlpha(255);
         } else {
-            PlayPause.setText("Play");
+            PlayIco.setAlpha(255);
+            PauseIco.setAlpha(0);
         }
     }
 
