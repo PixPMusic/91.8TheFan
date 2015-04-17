@@ -48,10 +48,11 @@ public class BackgroundService extends Service {
         Log.d(TAG, "onCreate");
 
         // Init the SharedPreferences and Editor
-        prefs = PreferenceManager.getDefaultSharedPreferences(getApplicationContext());
+        prefs = PreferenceManager.getDefaultSharedPreferences(this);
         url = prefs.getString("URL", "http://176.31.115.196:8214/");
         station = prefs.getString("STATION", "FOOBAR");
         editor = prefs.edit();
+
 
         // Set up the buffering notification
         notificationManager = (NotificationManager) getApplicationContext()
