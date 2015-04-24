@@ -65,74 +65,7 @@ public class BackgroundService extends Service {
         station = prefs.getString("STATION", "FOOBAR");
         editor = prefs.edit();
 
-        // Set up the buffering notification
-        notificationManager = (NotificationManager) getApplicationContext()
-                .getSystemService(NOTIFICATION_SERVICE);
-        Context context = getApplicationContext();
-
-        String notifTitle = context.getResources().getString(R.string.app_name);
-        String notifMessage = context.getResources().getString(R.string.buffering);
-
-        n = new Notification();
-        n.icon = R.drawable.ic_launcher;
-        n.tickerText = "Buffering";
-        n.when = System.currentTimeMillis();
-
-        Intent nIntent = new Intent(context, MainActivity.class);
-        PendingIntent pIntent = PendingIntent.getActivity(context, 0, nIntent, 0);
-
-        n.setLatestEventInfo(context, notifTitle, notifMessage, pIntent);
-
-        notificationManager.notify(notifId, n);
-
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
-            ComponentName c = new ComponentName("com.thefan.android", "BackgroundService");
-            ms = new MediaSessionCompat(this, "TheFan", c, pIntent);
-            ms.setMetadata(new MediaMetadataCompat.Builder()
-                    //.putBitmap(MediaMetadataCompat.METADATA_KEY_ALBUM_ART, artwork)
-                    .putString(MediaMetadataCompat.METADATA_KEY_ARTIST, "Pink Floyd")
-                    .putString(MediaMetadataCompat.METADATA_KEY_ALBUM, "Dark Side of the Moon")
-                    .putString(MediaMetadataCompat.METADATA_KEY_TITLE, "The Great Gig in the Sky")
-                    .build());
-            // Indicate you're ready to receive media commands
-            ms.setActive(true);
-            // Attach a new Callback to receive MediaSession updates
-            ms.setCallback(new MediaSessionCompat.Callback() {
-                // Implement your callbacks
-            });
-            // Indicate you want to receive transport controls via your Callback
-            ms.setFlags(MediaSession.FLAG_HANDLES_TRANSPORT_CONTROLS);
-            // Create a new Notification
-            final Notification noti = new Notification.Builder(this)
-                    // Hide the timestamp
-                    .setShowWhen(false)
-                            // Set the Notification style
-                    .setStyle(new Notification.MediaStyle()
-                            // Attach our MediaSession token
-                            .setMediaSession((MediaSession.Token) ms.getSessionToken().getToken())
-                                    // Show our playback controls in the compat view
-                            .setShowActionsInCompactView(0))
-                            // Set the Notification color
-                    .setColor(0xFFDB4437)
-                            // Set the large and small icons
-                            //.setLargeIcon(R.drawable.ic_launcher)
-                    .setSmallIcon(R.drawable.ic_launcher)
-                            // Set Notification content information
-                    .setContentText("Pink Floyd")
-                    .setContentInfo("Dark Side of the Moon")
-                    .setContentTitle("The Great Gig in the Sky")
-                            // Add some playback controls
-                            //.addAction(R.drawable.your_prev_icon, "prev", retreivePlaybackAction(3))
-                    .addAction(R.drawable.dark_pause_big, "pause", retreivePlaybackAction(1))
-                            //.addAction(R.drawable.your_next_icon, "next", retreivePlaybackAction(2))
-                    .build();
-
-            // Do something with your TransportControls
-            final MediaControllerCompat.TransportControls controls = ms.getController().getTransportControls();
-
-            ((NotificationManager) getSystemService(NOTIFICATION_SERVICE)).notify(1, noti);
-
-        }
+        notifMaker(true);
 
         mp = new MediaPlayer();
         mp.setAudioStreamType(AudioManager.STREAM_MUSIC);
@@ -185,21 +118,7 @@ public class BackgroundService extends Service {
 
         isPlaying = true;
 
-        Context context = getApplicationContext();
-        String notifTitle = context.getResources().getString(R.string.app_name);
-        String notifMessage = context.getResources().getString(R.string.now_playing);
-
-        n.icon = R.drawable.ic_launcher;
-        n.tickerText = notifMessage;
-        n.flags = Notification.FLAG_NO_CLEAR;
-        n.when = System.currentTimeMillis();
-
-        Intent nIntent = new Intent(context, MainActivity.class);
-        PendingIntent pIntent = PendingIntent.getActivity(context, 0, nIntent, 0);
-
-        n.setLatestEventInfo(context, notifTitle, notifMessage, pIntent);
-        // Change 5315 to some nother number
-        notificationManager.notify(notifId, n);
+        notifMaker(true, artist, title);
     }
 
     Runnable mStatusChecker = new Runnable() {
@@ -210,25 +129,80 @@ public class BackgroundService extends Service {
             artist = metaFetch.getArtist();
             title = metaFetch.getTitle();
 
-            Context context = getApplicationContext();
-            String notifTitle = title;
-            String notifMessage = artist;
+            notifMaker(true, artist, title);
+
+            mHandler.postDelayed(mStatusChecker, mInterval);
+        }
+    };
+
+    private void notifMaker(boolean isMedia) {
+        notifMaker(true, "91,8 The Fan", "buffering");
+    }
+
+    private void notifMaker(boolean isMedia, String artistName, String titleName) {
+        Context context = getApplicationContext();
+        Intent nIntent = new Intent(context, MainActivity.class);
+        PendingIntent pIntent = PendingIntent.getActivity(context, 0, nIntent, 0);
+
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
+            ComponentName c = new ComponentName("com.thefan.android", "BackgroundService");
+            ms = new MediaSessionCompat(this, "TheFan", c, pIntent);
+            ms.setMetadata(new MediaMetadataCompat.Builder()
+                    //.putBitmap(MediaMetadataCompat.METADATA_KEY_ALBUM_ART, artwork)
+                    .putString(MediaMetadataCompat.METADATA_KEY_ARTIST, "Pink Floyd")
+                    .putString(MediaMetadataCompat.METADATA_KEY_ALBUM, "Dark Side of the Moon")
+                    .putString(MediaMetadataCompat.METADATA_KEY_TITLE, "The Great Gig in the Sky")
+                    .build());
+            // Indicate you're ready to receive media commands
+            ms.setActive(true);
+            // Attach a new Callback to receive MediaSession updates
+            ms.setCallback(new MediaSessionCompat.Callback() {
+                // Implement your callbacks
+            });
+            // Indicate you want to receive transport controls via your Callback
+            ms.setFlags(MediaSession.FLAG_HANDLES_TRANSPORT_CONTROLS);
+            // Create a new Notification
+            n = new Notification.Builder(this)
+                    // Hide the timestamp
+                    .setShowWhen(false)
+                            // Set the Notification style
+                    .setStyle(new Notification.MediaStyle()
+                            // Attach our MediaSession token
+                            .setMediaSession((MediaSession.Token) ms.getSessionToken().getToken())
+                                    // Show our playback controls in the compat view
+                            .setShowActionsInCompactView(0))
+                            // Set the Notification color
+                    .setColor(0xFFDB4437)
+                            // Set the large and small icons
+                            //.setLargeIcon(R.drawable.ic_launcher)
+                    .setSmallIcon(R.drawable.ic_launcher)
+                            // Set Notification content information
+                    .setContentText(artistName)
+                    .setContentInfo("91.8 The Fan")
+                    .setContentTitle(titleName)
+                            // Add some playback controls
+                            //.addAction(R.drawable.your_prev_icon, "prev", retreivePlaybackAction(3))
+                    .addAction(R.drawable.dark_pause_big, "pause", retreivePlaybackAction(1))
+                            //.addAction(R.drawable.your_next_icon, "next", retreivePlaybackAction(2))
+                    .build();
+
+            // Do something with your TransportControls
+            final MediaControllerCompat.TransportControls controls = ms.getController().getTransportControls();
+            ((NotificationManager) getSystemService(NOTIFICATION_SERVICE)).notify(notifId, n);
+        } else {
+            String notifTitle = titleName;
+            String notifMessage = artistName;
 
             n.icon = R.drawable.ic_launcher;
             n.tickerText = notifMessage;
             n.flags = Notification.FLAG_NO_CLEAR;
             n.when = System.currentTimeMillis();
 
-            Intent nIntent = new Intent(context, MainActivity.class);
-            PendingIntent pIntent = PendingIntent.getActivity(context, 0, nIntent, 0);
-
             n.setLatestEventInfo(context, notifTitle, notifMessage, pIntent);
             // Change 5315 to some nother number
             notificationManager.notify(notifId, n);
-
-            mHandler.postDelayed(mStatusChecker, mInterval);
         }
-    };
+    }
 
     void startRepeatingTask() {
         mStatusChecker.run();
