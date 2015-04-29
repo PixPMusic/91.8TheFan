@@ -10,6 +10,7 @@ import android.content.Intent;
 import android.content.SharedPreferences;
 import android.media.AudioManager;
 import android.media.MediaPlayer;
+import android.media.RemoteControlClient;
 import android.media.session.MediaSession;
 import android.os.Build;
 import android.os.Handler;
@@ -46,6 +47,8 @@ public class BackgroundService extends Service {
     MediaPlayer mp;
     MediaSessionCompat ms;
     //Bitmap artwork = BitmapFactory.decodeResource(getResources(), R.drawable.ic_launcher);
+
+    private RemoteControlClient rC;
 
     @Override
     public IBinder onBind(Intent arg0) {
@@ -186,6 +189,7 @@ public class BackgroundService extends Service {
                             //.addAction(R.drawable.your_next_icon, "next", retreivePlaybackAction(2))
                     .build();
 
+            n.flags = Notification.FLAG_NO_CLEAR;
             // Do something with your TransportControls
             final MediaControllerCompat.TransportControls controls = ms.getController().getTransportControls();
             ((NotificationManager) getSystemService(NOTIFICATION_SERVICE)).notify(notifId, n);
@@ -202,6 +206,10 @@ public class BackgroundService extends Service {
             // Change 5315 to some nother number
             notificationManager.notify(notifId, n);
         }
+    }
+
+    private void lockScreenControls() {
+
     }
 
     void startRepeatingTask() {
